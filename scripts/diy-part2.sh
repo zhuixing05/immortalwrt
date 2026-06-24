@@ -1,34 +1,32 @@
 #!/bin/bash
-# DIY Part 2 - After Update feeds（ImmortalWrt Master）
+# DIY Part 2 - ImmortalWrt 25.12-SNAPSHOT
 
-# ==================== 基础设置 ====================
 sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
 
 sed -i "s|DISTRIB_REVISION='.*'|DISTRIB_REVISION='R$(date +%Y.%m.%d)'|g" package/base-files/files/etc/openwrt_release
 echo "DISTRIB_SOURCECODE='immortalwrt'" >> package/base-files/files/etc/openwrt_release
 
-# ==================== LAN IP 修改 ====================
 sed -i "s/192.168.1.1/192.168.133.1/g" package/base-files/files/bin/config_generate
 
-# ==================== 添加主题 ====================
 rm -rf package/luci-theme-argon
 git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 
 rm -rf package/luci-app-argon-config
 git clone https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
-# ==================== 添加最新版 frpc ====================
 rm -rf package/frp
 rm -rf package/luci-app-frpc
 git clone https://github.com/breakertian/luci-app-frpc.git package/luci-app-frpc
 git clone https://github.com/fatedier/frp.git package/frp
 
-# ==================== 首次启动自动配置脚本 ====================
 mkdir -p package/base-files/files/etc/uci-defaults
 
 cat > package/base-files/files/etc/uci-defaults/99-custom-setup << 'EOF'
 #!/bin/sh
 exec >/tmp/setup.log 2>&1
+
+# 主机名
+uci set system.@system[0].hostname='KANTANROUTER'
 
 # LAN IP
 uci set network.lan.ipaddr='192.168.133.1'
@@ -72,5 +70,3 @@ echo "All done!"
 EOF
 
 chmod +x package/base-files/files/etc/uci-defaults/99-custom-setup
-
-echo "diy-part2.sh 执行完成"
