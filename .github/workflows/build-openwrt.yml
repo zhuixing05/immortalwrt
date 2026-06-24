@@ -74,17 +74,3 @@ jobs:
           name: ImmortalWrt-Master-RAX3000M-${{ github.run_number }}
           path: immortalwrt/bin/targets/mediatek/filogic/
           retention-days: 7
-
-      - name: Generate release tag
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "TAG_NAME=RAX3000M-Master-${{ github.event.inputs.tag || github.run_number }}" >> $GITHUB_ENV
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: github.event_name == 'workflow_dispatch'
-        with:
-          tag_name: ${{ env.TAG_NAME }}
-          files: immortalwrt/bin/targets/mediatek/filogic/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
