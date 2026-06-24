@@ -10,7 +10,6 @@ sed -i "s|DISTRIB_REVISION='.*'|DISTRIB_REVISION='R$(date +%Y.%m.%d)'|g" package
 echo "DISTRIB_SOURCECODE='immortalwrt'" >> package/base-files/files/etc/openwrt_release
 
 # ==================== LAN IP 修改 ====================
-# 修改 LAN IP 为 192.168.133.1
 sed -i "s/192.168.1.1/192.168.133.1/g" package/base-files/files/bin/config_generate
 
 # ==================== 添加主题 ====================
@@ -21,11 +20,8 @@ rm -rf package/luci-app-argon-config
 git clone https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
 # ==================== 添加最新版 frpc ====================
-# 删除旧版 frpc
 rm -rf package/frp
 rm -rf package/luci-app-frpc
-
-# 添加最新版 frpc 和 luci-app-frpc
 git clone https://github.com/breakertian/luci-app-frpc.git package/luci-app-frpc
 git clone https://github.com/fatedier/frp.git package/frp
 
@@ -38,6 +34,18 @@ exec >/tmp/setup.log 2>&1
 
 # LAN IP
 uci set network.lan.ipaddr='192.168.133.1'
+uci commit network
+
+# WiFi 配置
+uci set wireless.@wifi-device[0].disabled='0'
+uci set wireless.@wifi-iface[0].disabled='0'
+uci set wireless.@wifi-iface[0].encryption='psk2'
+uci set wireless.@wifi-iface[0].ssid='IkantanlWrt'
+uci set wireless.@wifi-iface[0].key='kantanvpn'
+uci commit wireless
+
+# WAN 动态获取 IP
+uci set network.wan.proto='dhcp'
 uci commit network
 
 # frpc 配置
