@@ -2,10 +2,8 @@
 # DIY Part 2 - After Update feeds（ImmortalWrt Master）
 
 # ==================== 基础设置 ====================
-# 设置 root 密码为 kantanvpn
 sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
 
-# 修改版本描述
 sed -i "s|DISTRIB_REVISION='.*'|DISTRIB_REVISION='R$(date +%Y.%m.%d)'|g" package/base-files/files/etc/openwrt_release
 echo "DISTRIB_SOURCECODE='immortalwrt'" >> package/base-files/files/etc/openwrt_release
 
