@@ -1,0 +1,90 @@
+name: Build ImmortalWrt Master for CMCC RAX3000M
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag'
+        required: false
+        default: ''
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    name: Build ImmortalWrt
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext git gperf haveged \
+            help2man intltool lib32gcc1 libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
+            libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool \
+            lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip \
+            qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs unzip upx-ucl wget xmlto \
+            xsltproc zlib1g-dev
+
+      - name: Clone ImmortalWrt source
+        run: |
+          git clone https://github.com/immortalwrt/immortalwrt.git -b master immortalwrt
+
+      - name: Update feeds
+        run: |
+          cd immortalwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Load custom configuration
+        run: |
+          cp config/mediatek-filogic/RAX3000M.config immortalwrt/.config
+          cd immortalwrt
+          make defconfig
+
+      - name: Run DIY scripts
+        run: |
+          cd immortalwrt
+          chmod +x ../scripts/diy-part1.sh ../scripts/diy-part2.sh
+          ../scripts/diy-part1.sh
+          ../scripts/diy-part2.sh
+
+      - name: Download packages
+        run: |
+          cd immortalwrt
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: Build firmware
+        run: |
+          cd immortalwrt
+          echo -e "$(nproc) thread compile"
+          make -j$(nproc) || make -j1 V=s
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImmortalWrt-Master-RAX3000M-${{ github.run_number }}
+          path: immortalwrt/bin/targets/mediatek/filogic/
+          retention-days: 7
+
+      - name: Generate release tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "TAG_NAME=RAX3000M-Master-${{ github.event.inputs.tag || github.run_number }}" >> $GITHUB_ENV
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: immortalwrt/bin/targets/mediatek/filogic/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
